@@ -5,13 +5,13 @@
 
 Spark:
   # Path: "/opt/spark"
-  Path: "/usr/spark-2.4.1"
+  Path: "/usr/local/spark"
 
 
 Master:
   Name: master
-  Image: "gettyimages/spark"
-  ImageTag: "2.4.1-hadoop-3.0"
+  Image: "markthebault/spark"
+  ImageTag: "2.4.4"
   Replicas: 1
   Component: "spark-master"
   Cpu: "100m"
@@ -20,24 +20,26 @@ Master:
   ContainerPort: 7077
   # Set Master JVM memory. Default 1g
   # DaemonMemory: 1g
+  coreLimit: 2
+  # configOptions:
 
   nodeSelector: {}
-  affinity:
-    podAntiAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-      - labelSelector:
-          matchExpressions:
-          - key: spark
-            operator: In
-            values:
-            - worker
-        topologyKey: "kubernetes.io/hostname"
+  affinity: {}
+    # podAntiAffinity:
+    #   requiredDuringSchedulingIgnoredDuringExecution:
+    #   - labelSelector:
+    #       matchExpressions:
+    #       - key: spark
+    #         operator: In
+    #         values:
+    #         - worker
+    #     topologyKey: "kubernetes.io/hostname"
  
-  tolerations:
-  - key: "sku"
-    operator: "Equal"
-    value: "spark"
-    effect: "NoSchedule"
+  tolerations: []
+  # - key: "sku"
+  #   operator: "Equal"
+  #   value: "spark"
+  #   effect: "NoSchedule"
 
   securityContext:
     enabled: false
@@ -68,8 +70,8 @@ WebUi:
 
 Worker:
   Name: worker
-  Image: "gettyimages/spark"
-  ImageTag: "2.4.1-hadoop-3.0"
+  Image: "markthebault/spark"
+  ImageTag: "2.4.4"
   Replicas: 1
   Component: "spark-worker"
   Cpu: "100m"
@@ -78,7 +80,10 @@ Worker:
   # Set Worker JVM memory. Default 1g
   # DaemonMemory: 1g
   # Set how much total memory workers have to give executors
-  # ExecutorMemory: 1g
+  ExecutorMemory: 2g
+  coreLimit: 2
+  #SPARK_WORKER_OPTS
+  configOptions:
   Autoscaling:
     Enabled: true
   ReplicasMax: 3

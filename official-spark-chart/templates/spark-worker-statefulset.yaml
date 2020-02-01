@@ -1,5 +1,21 @@
-apiVersion: {{ template "deployment.apiVersion" . }}
-kind: Deplyment
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "worker-fullname" . }}-headless
+  labels:
+    heritage: {{ .Release.Service | quote }}
+    release: {{ .Release.Name | quote }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    component: "{{ .Release.Name }}-{{ .Values.Worker.Component }}"
+    spark.name: {{ template "name" . }}
+spec:
+  type: ClusterIP
+  clusterIP: None
+  selector:
+    component: "{{ .Release.Name }}-{{ .Values.Worker.Component }}"
+---
+apiVersion: {{ template "statefulset.apiVersion" . }}
+kind: StatefulSet
 metadata:
   name: {{ template "worker-fullname" . }}
   labels:
@@ -7,14 +23,15 @@ metadata:
     release: {{ .Release.Name | quote }}
     chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
     component: "{{ .Release.Name }}-{{ .Values.Worker.Component }}"
+    spark.name: {{ template "name" . }}
 spec:
+  serviceName: {{ template "worker-fullname" . }}-headless
 {{- if not .Values.Worker.Autoscaling.Enabled }}
   replicas: {{ default 1 .Values.Worker.Replicas }}
 {{- end }}
   selector:
     matchLabels:
       component: "{{ .Release.Name }}-{{ .Values.Worker.Component }}"
-      spark.name: {{ template "name" . }}
   template:
     metadata:
       labels:
@@ -58,6 +75,14 @@ spec:
             value: {{ default "1g" .Values.Worker.ExecutorMemory | quote }}
           - name: SPARK_WORKER_WEBUI_PORT
             value: {{ .Values.WebUi.ContainerPort | quote }}
+          {{- if .Values.Worker.coreLimit }}
+          - name: SPARK_WORKER_CORES
+            value: {{ .Values.Worker.coreLimit | quote }}
+          {{- end }}
+          {{- if .Values.Worker.configOptions }}
+          - name: SPARK_WORKER_OPTS
+            value: {{ .Values.Worker.configOptions }}
+          {{- end }}
           {{- if .Values.Worker.livenessProbe.enabled }}
           livenessProbe:
             httpGet:

@@ -31,8 +31,24 @@ spec:
     component: "{{ .Release.Name }}-{{ .Values.Master.Component }}"
   type: {{ .Values.Master.ServiceType }}
 ---
-apiVersion: {{ template "deployment.apiVersion" . }}
-kind: Deployment
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "master-fullname" . }}-headless
+  labels:
+    heritage: {{ .Release.Service | quote }}
+    release: {{ .Release.Name | quote }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    component: "{{ .Release.Name }}-{{ .Values.Master.Component }}"
+    spark.name: {{ template "name" . }}
+spec:
+  type: ClusterIP
+  clusterIP: None
+  selector:
+    component: "{{ .Release.Name }}-{{ .Values.Master.Component }}"
+---
+apiVersion: {{ template "statefulset.apiVersion" . }}
+kind: StatefulSet
 metadata:
   name: {{ template "master-fullname" . }}
   labels:
@@ -40,14 +56,13 @@ metadata:
     release: {{ .Release.Name | quote }}
     chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
     component: "{{ .Release.Name }}-{{ .Values.Master.Component }}"
+    spark.name: {{ template "name" . }}
 spec:
+  serviceName: {{ template "master-fullname" . }}-headless
   replicas: {{ default 1 .Values.Master.Replicas }}
-  strategy:
-    type: RollingUpdate
   selector:
     matchLabels:
       component: "{{ .Release.Name }}-{{ .Values.Master.Component }}"
-      spark.name: {{ template "name" . }}
   template:
     metadata:
       labels:
@@ -92,6 +107,14 @@ spec:
             value: {{ .Values.Master.ServicePort | quote }}
           - name: SPARK_MASTER_WEBUI_PORT
             value: {{ .Values.WebUi.ContainerPort | quote }}
+          {{- if .Values.Master.coreLimit }}
+          - name: SPARK_WORKER_CORES
+            value: {{ .Values.Master.coreLimit | quote }}
+          {{- end }}
+          {{- if .Values.Master.configOptions }}
+          - name: SPARK_MASTER_OPTS
+            value: {{ .Values.Master.configOptions | quote }}
+          {{- end }}
           {{- if .Values.Master.livenessProbe.enabled }}
           livenessProbe:
             httpGet:

@@ -13,3 +13,10 @@
 
   export ZEPPELIN_SERVICE_IP=$(kubectl get svc --namespace {{ .Release.Namespace }} {{ template "zeppelin-fullname" . }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
   echo http://$ZEPPELIN_SERVICE_IP:{{ .Values.Zeppelin.ServicePort }}
+
+3. Run some stuff:
+conect to spark master and:
+$SPARK_HOME/bin/spark-submit --master spark://{{ template "master-fullname" . }}:{{ .Values.Master.ServicePort }} \
+  --deploy-mode cluster \
+  --class org.apache.spark.examples.SparkPi \
+  ./examples/jars/spark-examples_2.11-2.4.4.jar 1000
