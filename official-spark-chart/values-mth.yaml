@@ -137,7 +137,7 @@ Proxy:
   containerPort: 8080
 
   service:
-    port: 9090
+    port: 8080
     type: LoadBalancer
     annotations: {}
 
@@ -145,6 +145,8 @@ Proxy:
     Enabled: false
     Path: "/"
     Tls: []
+    Host: spark.local
+    Annotations: {}
 
   livenessProbe:
     enabled: true

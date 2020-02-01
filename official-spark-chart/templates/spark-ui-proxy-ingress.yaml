@@ -17,28 +17,16 @@ metadata:
 spec:
 {{- if $ingress.Tls }}
   tls:
-  {{- range $ingress.Tls }}
   - hosts:
-    {{- range .Hosts }}
-    - {{ . }}
-    {{- end }}
+    - {{ .Values.Proxy.Ingress.Host }}
     secretName: {{ .SecretName | default (printf "%s-tls" $fullName) }}
 {{- end }}
-{{- end }}
-  {{- if $ingress.Hosts }}
   rules:
-  {{- range $ingress.Hosts }}
-  - host: {{ . }}
+  - host: {{ .Values.Proxy.Ingress.Host }}
     http:
       paths:
-      - path: {{ $ingress.Path }}
+      - path: /
         backend:
-          serviceName: {{ $fullName }}
-          servicePort: http
-  {{- end }}
-{{- else }}
-  backend:
-    serviceName: {{ template "ui-proxy-fullname" . }}
-    servicePort: http
-{{- end }}
+          serviceName: {{ template "ui-proxy-fullname" . }}
+          servicePort: {{ include "ingress.port" $ }}
 {{- end }}

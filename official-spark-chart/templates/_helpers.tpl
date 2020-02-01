@@ -58,6 +58,13 @@ Return the apiVersion of deployment.
 {{- end -}}
 
 {{/*
+Return the apiVersion of deployment.
+*/}}
+{{- define "ingress.port" -}}
+{{ .Values.Proxy.service.port }}
+{{- end -}}
+
+{{/*
 Renders a value that contains template.
 Usage:
 {{ include "spark.tplValue" (dict "value" .Values.path.to.the.Value "context" $) }}
