@@ -1,0 +1,116 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "master-fullname" . }}
+  labels:
+    heritage: {{ .Release.Service | quote }}
+    release: {{ .Release.Name | quote }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    component: "{{ .Release.Name }}-{{ .Values.Master.Component }}"
+spec:
+  ports:
+    - port: {{ .Values.Master.ServicePort }}
+      targetPort: {{ .Values.Master.ContainerPort }}
+  selector:
+    component: "{{ .Release.Name }}-{{ .Values.Master.Component }}"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "webui-fullname" . }}
+  labels:
+    heritage: {{ .Release.Service | quote }}
+    release: {{ .Release.Name | quote }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    component: "{{ .Release.Name }}-{{ .Values.Master.Component }}"
+spec:
+  ports:
+    - port: {{ .Values.WebUi.ServicePort }}
+      targetPort: {{ .Values.WebUi.ContainerPort }}
+  selector:
+    component: "{{ .Release.Name }}-{{ .Values.Master.Component }}"
+  type: {{ .Values.Master.ServiceType }}
+---
+apiVersion: {{ template "deployment.apiVersion" . }}
+kind: Deployment
+metadata:
+  name: {{ template "master-fullname" . }}
+  labels:
+    heritage: {{ .Release.Service | quote }}
+    release: {{ .Release.Name | quote }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    component: "{{ .Release.Name }}-{{ .Values.Master.Component }}"
+spec:
+  replicas: {{ default 1 .Values.Master.Replicas }}
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      component: "{{ .Release.Name }}-{{ .Values.Master.Component }}"
+      spark.name: {{ template "name" . }}
+  template:
+    metadata:
+      labels:
+        heritage: {{ .Release.Service | quote }}
+        release: {{ .Release.Name | quote }}
+        chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+        component: "{{ .Release.Name }}-{{ .Values.Master.Component }}"
+        spark: master
+    spec:
+      {{- if .Values.Master.affinity }}
+      affinity: {{- include "spark.tplValue" (dict "value" .Values.Master.affinity "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.Master.nodeSelector }}
+      nodeSelector: {{- include "spark.tplValue" (dict "value" .Values.Master.nodeSelector "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.Master.tolerations }}
+      tolerations: {{- include "spark.tplValue" (dict "value" .Values.Master.tolerations "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.Master.securityContext.enabled }}
+      securityContext:
+        fsGroup: {{ .Values.Master.securityContext.fsGroup }}
+        runAsUser: {{ .Values.Master.securityContext.runAsUser }}
+      {{- end }}
+      containers:
+        - name: {{ template "master-fullname" . }}
+          image: "{{ .Values.Master.Image }}:{{ .Values.Master.ImageTag }}"
+          command: ["/bin/sh","-c"]
+          args: ["echo $(hostname -i) {{ template "master-fullname" . }} >> /etc/hosts; {{ .Values.Spark.Path }}/bin/spark-class org.apache.spark.deploy.master.Master"]
+          ports:
+            - containerPort: {{ .Values.Master.ContainerPort }}
+            - containerPort: {{ .Values.WebUi.ContainerPort }}
+          resources:
+            requests:
+              cpu: "{{ .Values.Master.Cpu }}"
+              memory: "{{ .Values.Master.Memory }}"
+          env:
+          - name: SPARK_DAEMON_MEMORY
+            value: {{ default "1g" .Values.Master.DaemonMemory | quote }}
+          - name: SPARK_MASTER_HOST
+            value: {{ template "master-fullname" . }}
+          - name: SPARK_MASTER_PORT
+            value: {{ .Values.Master.ServicePort | quote }}
+          - name: SPARK_MASTER_WEBUI_PORT
+            value: {{ .Values.WebUi.ContainerPort | quote }}
+          {{- if .Values.Master.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.WebUi.ContainerPort }}
+            initialDelaySeconds: {{ .Values.Master.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.Master.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.Master.livenessProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.Master.livenessProbe.successThreshold }}
+            failureThreshold: {{ .Values.Master.livenessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.Master.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.WebUi.ContainerPort }}
+            initialDelaySeconds: {{ .Values.Master.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.Master.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.Master.readinessProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.Master.readinessProbe.successThreshold }}
+            failureThreshold: {{ .Values.Master.readinessProbe.failureThreshold }}
+          {{- end }}

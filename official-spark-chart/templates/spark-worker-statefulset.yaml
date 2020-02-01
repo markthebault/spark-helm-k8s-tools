@@ -1,0 +1,82 @@
+apiVersion: {{ template "deployment.apiVersion" . }}
+kind: Deplyment
+metadata:
+  name: {{ template "worker-fullname" . }}
+  labels:
+    heritage: {{ .Release.Service | quote }}
+    release: {{ .Release.Name | quote }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    component: "{{ .Release.Name }}-{{ .Values.Worker.Component }}"
+spec:
+{{- if not .Values.Worker.Autoscaling.Enabled }}
+  replicas: {{ default 1 .Values.Worker.Replicas }}
+{{- end }}
+  selector:
+    matchLabels:
+      component: "{{ .Release.Name }}-{{ .Values.Worker.Component }}"
+      spark.name: {{ template "name" . }}
+  template:
+    metadata:
+      labels:
+        heritage: {{ .Release.Service | quote }}
+        release: {{ .Release.Name | quote }}
+        chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+        component: "{{ .Release.Name }}-{{ .Values.Worker.Component }}"
+        spark: worker
+    spec:
+      {{- if .Values.Worker.affinity }}
+      affinity: {{- include "spark.tplValue" (dict "value" .Values.Worker.affinity "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.Worker.nodeSelector }}
+      nodeSelector: {{- include "spark.tplValue" (dict "value" .Values.Worker.nodeSelector "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.Worker.tolerations }}
+      tolerations: {{- include "spark.tplValue" (dict "value" .Values.Worker.tolerations "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.Worker.securityContext.enabled }}
+      securityContext:
+        fsGroup: {{ .Values.Worker.securityContext.fsGroup }}
+        runAsUser: {{ .Values.Worker.securityContext.runAsUser }}
+      {{- end }}
+      containers:
+        - name: {{ template "worker-fullname" . }}
+          image: "{{ .Values.Worker.Image }}:{{ .Values.Worker.ImageTag }}"
+          command: ["{{ .Values.Spark.Path }}/bin/spark-class", "org.apache.spark.deploy.worker.Worker", "spark://{{ template "master-fullname" . }}:{{ .Values.Master.ServicePort }}"]
+          ports:
+            - containerPort: {{ .Values.Worker.ContainerPort }}
+              name: webui
+            - containerPort: 4040
+              name: spark-context
+          resources:
+            requests:
+              cpu: "{{ .Values.Worker.Cpu }}"
+              memory: "{{ .Values.Worker.Memory }}"
+          env:
+          - name: SPARK_DAEMON_MEMORY
+            value: {{ default "1g" .Values.Worker.DaemonMemory | quote }}
+          - name: SPARK_WORKER_MEMORY
+            value: {{ default "1g" .Values.Worker.ExecutorMemory | quote }}
+          - name: SPARK_WORKER_WEBUI_PORT
+            value: {{ .Values.WebUi.ContainerPort | quote }}
+          {{- if .Values.Worker.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.WebUi.ContainerPort }}
+            initialDelaySeconds: {{ .Values.Worker.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.Worker.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.Worker.livenessProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.Worker.livenessProbe.successThreshold }}
+            failureThreshold: {{ .Values.Worker.livenessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.Worker.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.WebUi.ContainerPort }}
+            initialDelaySeconds: {{ .Values.Worker.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.Worker.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.Worker.readinessProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.Worker.readinessProbe.successThreshold }}
+            failureThreshold: {{ .Values.Worker.readinessProbe.failureThreshold }}
+          {{- end }}

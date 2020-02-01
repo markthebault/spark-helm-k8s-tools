@@ -1,0 +1,71 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "ui-proxy-fullname" . }}
+  labels:
+    heritage: {{ .Release.Service | quote }}
+    release: {{ .Release.Name | quote }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    component: "{{ .Release.Name }}-{{ .Values.Proxy.component }}"
+  {{- if .Values.Proxy.service.annotations }}
+  annotations: {{ .Values.Proxy.service.annotations| nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.Proxy.service.type }}
+  ports:
+    - port: {{ .Values.Proxy.service.port }}
+      targetPort: {{ .Values.Proxy.containerPort }}
+  selector: 
+    component: "{{ .Release.Name }}-{{ .Values.Proxy.component }}"
+---
+apiVersion: {{ template "deployment.apiVersion" . }}
+kind: Deployment
+metadata:
+  name: {{ template "ui-proxy-fullname" . }}
+  labels:
+    heritage: {{ .Release.Service | quote }}
+    release: {{ .Release.Name | quote }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    component: "{{ .Release.Name }}-{{ .Values.Proxy.component }}"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: "{{ .Release.Name }}-{{ .Values.Proxy.component }}"
+  template:
+    metadata:
+      labels:
+        heritage: {{ .Release.Service | quote }}
+        release: {{ .Release.Name | quote }}
+        chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+        component: "{{ .Release.Name }}-{{ .Values.Proxy.component }}"
+        spark: uiproxy
+    spec:
+      containers:
+        - name: {{ template "ui-proxy-fullname" . }}
+          image: "{{ .Values.Proxy.image }}"
+          command: ["python", "spark-ui-proxy.py", "{{ template "webui-fullname" . }}:{{ .Values.WebUi.ServicePort }}", "{{ .Values.Proxy.containerPort }}"]
+          ports:
+            - containerPort: {{ .Values.Proxy.containerPort }}
+          {{- if .Values.Proxy.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.Proxy.containerPort }}
+            initialDelaySeconds: {{ .Values.Proxy.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.Proxy.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.Proxy.livenessProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.Proxy.livenessProbe.successThreshold }}
+            failureThreshold: {{ .Values.Proxy.livenessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.Proxy.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.Proxy.containerPort }}
+            initialDelaySeconds: {{ .Values.Proxy.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.Proxy.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.Proxy.readinessProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.Proxy.readinessProbe.successThreshold }}
+            failureThreshold: {{ .Values.Proxy.readinessProbe.failureThreshold }}
+          {{- end }}

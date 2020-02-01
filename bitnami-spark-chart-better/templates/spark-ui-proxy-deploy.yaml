@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "spark.fullname" . }}-ui-proxy
+  labels: {{- include "spark.labels" . | nindent 4 }}
+    app.kubernetes.io/component: ui-proxy
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {{- include "spark.matchLabels" . | nindent 6 }}
+      app.kubernetes.io/component: ui-proxy
+  template:
+    metadata:
+      labels: {{- include "spark.labels" . | nindent 8 }}
+        app.kubernetes.io/component: ui-proxy
+    spec:
+      containers:
+        - name: {{ include "spark.fullname" . }}-ui-proxy
+          image: "{{ .Values.proxy.image }}"
+          command: ["python", "spark-ui-proxy.py", "{{ include "spark.master.service.name" . }}:{{ .Values.service.webPort }}", "{{ .Values.proxy.containerPort }}"]
+          ports:
+            - containerPort: {{ .Values.proxy.containerPort }}
+          {{- if .Values.proxy.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.proxy.containerPort }}
+            initialDelaySeconds: {{ .Values.proxy.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.proxy.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.proxy.livenessProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.proxy.livenessProbe.successThreshold }}
+            failureThreshold: {{ .Values.proxy.livenessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.proxy.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.proxy.containerPort }}
+            initialDelaySeconds: {{ .Values.proxy.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.proxy.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.proxy.readinessProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.proxy.readinessProbe.successThreshold }}
+            failureThreshold: {{ .Values.proxy.readinessProbe.failureThreshold }}
+          {{- end }}
