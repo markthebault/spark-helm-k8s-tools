@@ -58,6 +58,7 @@ spec:
       containers:
         - name: {{ template "worker-fullname" . }}
           image: "{{ .Values.Worker.Image }}:{{ .Values.Worker.ImageTag }}"
+          imagePullPolicy: {{ .Values.Image.PullPolicy | quote }}
           command: ["{{ .Values.Spark.Path }}/bin/spark-class", "org.apache.spark.deploy.worker.Worker", "spark://{{ template "master-fullname" . }}:{{ .Values.Master.ServicePort }}"]
           ports:
             - containerPort: {{ .Values.Worker.ContainerPort }}

@@ -8,7 +8,8 @@ ENV HADOOP_VERSION 2.7
 RUN apt-get -y update && \
     apt-get install --no-install-recommends -y openjdk-8-jre-headless ca-certificates-java  \
     curl unzip wget \
-    python3 python3-setuptools \
+    python3 python3-setuptools
+    rsync \
     && ln -s /usr/bin/python3 /usr/bin/python \
     && easy_install3 pip py4j && \
     rm -rf /var/lib/apt/lists/*

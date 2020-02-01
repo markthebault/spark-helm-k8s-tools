@@ -7,6 +7,8 @@ Spark:
   # Path: "/opt/spark"
   Path: "/usr/local/spark"
 
+Image:
+  PullPolicy: Always
 
 Master:
   Name: master
@@ -131,13 +133,14 @@ Worker:
 Zeppelin:
   Name: zeppelin
   Image: "apache/zeppelin"
-  ImageTag: "0.8.2"
+  ImageTag: "0.7.2"
   Replicas: 1
   Component: "zeppelin"
-  Cpu: "100m"
+  # Cpu: "100m"
   ServicePort: 8080
   ContainerPort: 8080
-  ServiceType: ClusterIP
+  ServiceType: LoadBalancer
+  Password: lolo1234!
 
   Ingress:
     Enabled: false

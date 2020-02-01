@@ -55,6 +55,8 @@ spec:
               value: {{ .Values.Zeppelin.ContainerPort | quote }}
             - name: SPARK_MASTER
               value: "spark://{{ template "master-fullname" . }}:{{ .Values.Zeppelin.ServicePort }}"
+            - name: ZEPPELIN_PASSWORD
+              value: {{ .Values.Zeppelin.Password | quote }} #TODO: use secrets for that
           volumeMounts:
           {{- if .Values.Zeppelin.Persistence.Config.Enabled }}
             - name: {{ template "master-fullname" . }}-config

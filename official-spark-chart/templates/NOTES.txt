@@ -19,4 +19,4 @@ conect to spark master and:
 $SPARK_HOME/bin/spark-submit --master spark://{{ template "master-fullname" . }}:{{ .Values.Master.ServicePort }} \
   --deploy-mode cluster \
   --class org.apache.spark.examples.SparkPi \
-  ./examples/jars/spark-examples_2.11-2.4.4.jar 1000
+  ./examples/jars/spark-examples_2.11-2.4.4.jar 10000
