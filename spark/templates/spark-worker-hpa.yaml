@@ -3,16 +3,14 @@ apiVersion: autoscaling/v2beta1
 kind: HorizontalPodAutoscaler
 metadata:
   labels:
-    heritage: {{ .Release.Service | quote }}
-    release: {{ .Release.Name | quote }}
-    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
-    component: "{{ .Release.Name }}-{{ .Values.Worker.Component }}"
-  name: {{ template "worker-fullname" . }}
+    {{- include "spark.labels" . | nindent 4 }}
+    {{- include "spark.workerLabels" . | nindent 4 }}
+  name: {{ template "spark.worker-fullname" . }}
 spec:
   scaleTargetRef:
-    apiVersion: {{ template "deployment.apiVersion" . }}
+    apiVersion: {{ template "spark.deployment.apiVersion" . }}
     kind: Deployment
-    name: {{ template "worker-fullname" . }}
+    name: {{ template "spark.worker-fullname" . }}
   minReplicas: {{ .Values.Worker.Replicas }}
   maxReplicas: {{ .Values.Worker.ReplicasMax }}
   metrics:

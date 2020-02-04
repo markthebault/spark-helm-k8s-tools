@@ -1,64 +1,13 @@
-apiVersion: v1
-kind: Service
-metadata:
-  name: {{ template "master-fullname" . }}
-  labels:
-    heritage: {{ .Release.Service | quote }}
-    release: {{ .Release.Name | quote }}
-    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
-    component: "{{ .Release.Name }}-{{ .Values.Master.Component }}"
-spec:
-  ports:
-    - port: {{ .Values.Master.ServicePort }}
-      targetPort: {{ .Values.Master.ContainerPort }}
-  selector:
-    component: "{{ .Release.Name }}-{{ .Values.Master.Component }}"
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: {{ template "webui-fullname" . }}
-  labels:
-    heritage: {{ .Release.Service | quote }}
-    release: {{ .Release.Name | quote }}
-    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
-    component: "{{ .Release.Name }}-{{ .Values.Master.Component }}"
-spec:
-  ports:
-    - port: {{ .Values.WebUi.ServicePort }}
-      targetPort: {{ .Values.WebUi.ContainerPort }}
-  selector:
-    component: "{{ .Release.Name }}-{{ .Values.Master.Component }}"
-  type: {{ .Values.Master.ServiceType }}
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: {{ template "master-fullname" . }}-headless
-  labels:
-    heritage: {{ .Release.Service | quote }}
-    release: {{ .Release.Name | quote }}
-    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
-    component: "{{ .Release.Name }}-{{ .Values.Master.Component }}"
-    spark.name: {{ template "name" . }}
-spec:
-  type: ClusterIP
-  clusterIP: None
-  selector:
-    component: "{{ .Release.Name }}-{{ .Values.Master.Component }}"
----
-apiVersion: {{ template "statefulset.apiVersion" . }}
+
+apiVersion: {{ template "spark.statefulset.apiVersion" . }}
 kind: StatefulSet
 metadata:
-  name: {{ template "master-fullname" . }}
+  name: {{ template "spark.master-fullname" . }}
   labels:
-    heritage: {{ .Release.Service | quote }}
-    release: {{ .Release.Name | quote }}
-    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
-    component: "{{ .Release.Name }}-{{ .Values.Master.Component }}"
-    spark.name: {{ template "name" . }}
+    {{- include "spark.labels" . | nindent 4 }}
+    {{- include "spark.masterLabels" . | nindent 4 }}
 spec:
-  serviceName: {{ template "master-fullname" . }}-headless
+  serviceName: {{ template "spark.master-fullname" . }}-headless
   replicas: {{ default 1 .Values.Master.Replicas }}
   selector:
     matchLabels:
@@ -87,11 +36,11 @@ spec:
         runAsUser: {{ .Values.Master.securityContext.runAsUser }}
       {{- end }}
       containers:
-        - name: {{ template "master-fullname" . }}
+        - name: {{ template "spark.master-fullname" . }}
           image: "{{ .Values.Master.Image }}:{{ .Values.Master.ImageTag }}"
           imagePullPolicy: {{ .Values.Image.PullPolicy | quote }}
           command: ["/bin/sh","-c"]
-          args: ["echo $(hostname -i) {{ template "master-fullname" . }} >> /etc/hosts; {{ .Values.Spark.Path }}/bin/spark-class org.apache.spark.deploy.master.Master"]
+          args: ["echo $(hostname -i) {{ template "spark.master-fullname" . }} >> /etc/hosts; {{ .Values.Spark.Path }}/bin/spark-class org.apache.spark.deploy.master.Master"]
           ports:
             - containerPort: {{ .Values.Master.ContainerPort }}
             - containerPort: {{ .Values.WebUi.ContainerPort }}
@@ -103,7 +52,7 @@ spec:
           - name: SPARK_DAEMON_MEMORY
             value: {{ default "1g" .Values.Master.DaemonMemory | quote }}
           - name: SPARK_MASTER_HOST
-            value: {{ template "master-fullname" . }}
+            value: {{ template "spark.master-fullname" . }}
           - name: SPARK_MASTER_PORT
             value: {{ .Values.Master.ServicePort | quote }}
           - name: SPARK_MASTER_WEBUI_PORT
@@ -138,3 +87,15 @@ spec:
             successThreshold: {{ .Values.Master.readinessProbe.successThreshold }}
             failureThreshold: {{ .Values.Master.readinessProbe.failureThreshold }}
           {{- end }}
+          {{- if .Values.condaenvs.enabled -}}
+          volumeMounts:
+          - name: condaenvvm
+            mountPath: /opt/conda/envs/
+          {{- end -}}
+      {{- if .Values.condaenvs.enabled -}}
+      volumes:
+      - name: condaenvvm
+        persistentVolumeClaim:
+          claimName: {{ .Values.condaenvs.claimName }}
+          readOnly: true
+      {{- end -}}
