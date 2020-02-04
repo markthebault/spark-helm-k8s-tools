@@ -1,19 +1,17 @@
 {{- $ingress := .Values.Proxy.Ingress -}}
-{{- $fullName := include "ui-proxy-fullname" . -}}
+{{- $fullName := include "spark.ui-proxy-fullname" . -}}
 {{- if $ingress.Enabled }}
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
-  name: {{ template "ui-proxy-fullname" . }}
+  name: {{ template "spark.ui-proxy-fullname" . }}
 {{- if $ingress.Annotations }}
   annotations:
 {{ toYaml $ingress.Annotations | indent 4 }}
 {{- end }}
   labels:
-    heritage: {{ .Release.Service | quote }}
-    release: {{ .Release.Name | quote }}
-    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
-    component: "{{ .Release.Name }}-{{ .Values.Proxy.component }}"
+    {{- include "spark.labels" . | nindent 4 }}
+    {{- include "spark.proxyLabels" . | nindent 4 }}
 spec:
 {{- if $ingress.Tls }}
   tls:
@@ -27,6 +25,6 @@ spec:
       paths:
       - path: /
         backend:
-          serviceName: {{ template "ui-proxy-fullname" . }}
-          servicePort: {{ include "ingress.port" $ }}
+          serviceName: {{ template "spark.ui-proxy-fullname" . }}
+          servicePort: {{ include "spark.ingress.port" $ }}
 {{- end }}

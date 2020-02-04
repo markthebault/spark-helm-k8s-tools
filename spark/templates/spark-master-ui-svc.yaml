@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "spark.webui-fullname" . }}
+  labels:
+    {{- include "spark.labels" . | nindent 4 }}
+    {{- include "spark.masterLabels" . | nindent 4 }}
+spec:
+  ports:
+    - port: {{ .Values.WebUi.ServicePort }}
+      targetPort: {{ .Values.WebUi.ContainerPort }}
+  selector:
+    component: "{{ .Release.Name }}-{{ .Values.Master.Component }}"
+  type: {{ .Values.Master.ServiceType }}

@@ -1,31 +1,12 @@
-apiVersion: v1
-kind: Service
-metadata:
-  name: {{ template "worker-fullname" . }}-headless
-  labels:
-    heritage: {{ .Release.Service | quote }}
-    release: {{ .Release.Name | quote }}
-    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
-    component: "{{ .Release.Name }}-{{ .Values.Worker.Component }}"
-    spark.name: {{ template "name" . }}
-spec:
-  type: ClusterIP
-  clusterIP: None
-  selector:
-    component: "{{ .Release.Name }}-{{ .Values.Worker.Component }}"
----
-apiVersion: {{ template "statefulset.apiVersion" . }}
+apiVersion: {{ template "spark.statefulset.apiVersion" . }}
 kind: StatefulSet
 metadata:
-  name: {{ template "worker-fullname" . }}
+  name: {{ template "spark.worker-fullname" . }}
   labels:
-    heritage: {{ .Release.Service | quote }}
-    release: {{ .Release.Name | quote }}
-    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
-    component: "{{ .Release.Name }}-{{ .Values.Worker.Component }}"
-    spark.name: {{ template "name" . }}
+    {{- include "spark.labels" . | nindent 4 }}
+    {{- include "spark.workerLabels" | nindent 4 -}}
 spec:
-  serviceName: {{ template "worker-fullname" . }}-headless
+  serviceName: {{ template "spark.worker-fullname" . }}-headless
 {{- if not .Values.Worker.Autoscaling.Enabled }}
   replicas: {{ default 1 .Values.Worker.Replicas }}
 {{- end }}
@@ -56,10 +37,10 @@ spec:
         runAsUser: {{ .Values.Worker.securityContext.runAsUser }}
       {{- end }}
       containers:
-        - name: {{ template "worker-fullname" . }}
+        - name: {{ template "spark.worker-fullname" . }}
           image: "{{ .Values.Worker.Image }}:{{ .Values.Worker.ImageTag }}"
           imagePullPolicy: {{ .Values.Image.PullPolicy | quote }}
-          command: ["{{ .Values.Spark.Path }}/bin/spark-class", "org.apache.spark.deploy.worker.Worker", "spark://{{ template "master-fullname" . }}:{{ .Values.Master.ServicePort }}"]
+          command: ["{{ .Values.Spark.Path }}/bin/spark-class", "org.apache.spark.deploy.worker.Worker", "spark://{{ template "spark.master-fullname" . }}:{{ .Values.Master.ServicePort }}"]
           ports:
             - containerPort: {{ .Values.Worker.ContainerPort }}
               name: webui
