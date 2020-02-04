@@ -9,14 +9,12 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      component: "{{ .Release.Name }}-{{ .Values.Proxy.component }}"
+      {{- include "spark.proxyLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        heritage: {{ .Release.Service | quote }}
-        release: {{ .Release.Name | quote }}
-        chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
-        component: "{{ .Release.Name }}-{{ .Values.Proxy.component }}"
+        {{- include "spark.labels" . | nindent 8 }}
+        {{- include "spark.proxyLabels" . | nindent 8 }}
         spark: uiproxy
     spec:
       containers:

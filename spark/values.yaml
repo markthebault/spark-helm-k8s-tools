@@ -12,12 +12,13 @@ Image:
 
 condaenvs:
     # customer.condaenvs.claimName -- Name of the pvc that contians condaenvs to attach to
+    enabled: false
     claimName: conda-env-pvc
 
 Master:
   Name: master
-  Image: "markthebault/spark"
-  ImageTag: "2.4.4"
+  Image: containerregistrydsp.azurecr.io/spark
+  ImageTag: latest
   Replicas: 1
   Component: "spark-master"
   Cpu: "100m"
@@ -76,8 +77,8 @@ WebUi:
 
 Worker:
   Name: worker
-  Image: "markthebault/spark"
-  ImageTag: "2.4.4"
+  Image: containerregistrydsp.azurecr.io/spark
+  ImageTag: latest
   Replicas: 1
   Component: "spark-worker"
   Cpu: "100m"
@@ -120,7 +121,7 @@ Worker:
     runAsUser: 1001    
 
   livenessProbe:
-    enabled: false #TODO: put back to true
+    enabled: true 
     initialDelaySeconds: 60
     periodSeconds: 20
     timeoutSeconds: 5
@@ -136,8 +137,8 @@ Worker:
 
 Proxy:
   name: uiproxy
-  component: proxy
-  image: markthebault/spark-ui-proxy:latest
+  Component: proxy
+  image: containerregistrydsp.azurecr.io/spark-ui-proxy:latest
   containerPort: 8080
 
   service:

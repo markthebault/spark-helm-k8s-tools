@@ -87,12 +87,16 @@ spec:
             successThreshold: {{ .Values.Worker.readinessProbe.successThreshold }}
             failureThreshold: {{ .Values.Worker.readinessProbe.failureThreshold }}
           {{- end }}
+          {{- if .Values.condaenvs.enabled -}}
           volumeMounts:
           - name: condaenvvm
             mountPath: /opt/conda/envs/
+          {{- end -}}
 
+      {{- if .Values.condaenvs.enabled -}}
       volumes:
       - name: condaenvvm
         persistentVolumeClaim:
           claimName: {{ .Values.condaenvs.claimName }}
           readOnly: true
+      {{- end -}}

@@ -13,5 +13,5 @@ spec:
   ports:
     - port: {{ .Values.Proxy.service.port }}
       targetPort: {{ .Values.Proxy.containerPort }}
-  selector: 
-    component: "{{ .Release.Name }}-{{ .Values.Proxy.component }}"
+  selector:
+    {{- include "spark.proxyLabels" . | nindent 4 }}
