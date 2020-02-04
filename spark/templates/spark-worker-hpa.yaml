@@ -4,7 +4,7 @@ kind: HorizontalPodAutoscaler
 metadata:
   labels:
     {{- include "spark.labels" . | nindent 4 }}
-    {{- include "spark.workerLabels" | nindent 4 -}}
+    {{- include "spark.workerLabels" . | nindent 4 }}
   name: {{ template "spark.worker-fullname" . }}
 spec:
   scaleTargetRef:

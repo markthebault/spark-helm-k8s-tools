@@ -7,6 +7,13 @@ Expand the name of the chart.
 {{- end -}}
 
 {{/*
+Create chart name and version as used by the chart label.
+*/}}
+{{- define "spark.chart" -}}
+{{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{/*
 Create fully qualified names.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 */}}
@@ -106,7 +113,7 @@ component: "{{ .Release.Name }}-{{ .Values.Worker.Component }}"
 Proxy Labels
 */}}
 {{- define "spark.proxyLabels" -}}
-component: "{{ .Release.Name }}-{{ .Values.Worker.Component }}"
+component: "{{ .Release.Name }}-{{ .Values.Proxy.Component }}"
 {{- end -}}
 
 {{/* 

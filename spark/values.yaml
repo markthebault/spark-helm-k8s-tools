@@ -10,6 +10,10 @@ Spark:
 Image:
   PullPolicy: Always
 
+condaenvs:
+    # customer.condaenvs.claimName -- Name of the pvc that contians condaenvs to attach to
+    claimName: conda-env-pvc
+
 Master:
   Name: master
   Image: "markthebault/spark"

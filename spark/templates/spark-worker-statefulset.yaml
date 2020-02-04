@@ -4,7 +4,7 @@ metadata:
   name: {{ template "spark.worker-fullname" . }}
   labels:
     {{- include "spark.labels" . | nindent 4 }}
-    {{- include "spark.workerLabels" | nindent 4 -}}
+    {{- include "spark.workerLabels" . | nindent 4 }}
 spec:
   serviceName: {{ template "spark.worker-fullname" . }}-headless
 {{- if not .Values.Worker.Autoscaling.Enabled }}
@@ -87,3 +87,12 @@ spec:
             successThreshold: {{ .Values.Worker.readinessProbe.successThreshold }}
             failureThreshold: {{ .Values.Worker.readinessProbe.failureThreshold }}
           {{- end }}
+          volumeMounts:
+          - name: condaenvvm
+            mountPath: /opt/conda/envs/
+
+      volumes:
+      - name: condaenvvm
+        persistentVolumeClaim:
+          claimName: {{ .Values.condaenvs.claimName }}
+          readOnly: true
